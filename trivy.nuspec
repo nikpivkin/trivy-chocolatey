@@ -5,7 +5,7 @@
     <!-- Read this before publishing packages to chocolatey.org: https://github.com/chocolatey/chocolatey/wiki/CreatePackages -->
     <id>trivy</id>
     <title>Trivy</title>
-    <version>0.68.2</version>
+    <version>0.69.0</version>
     <authors>Teppei Fukuda</authors>
     <owners>Aqua Security</owners>
     <summary>Find vulnerabilities, misconfigurations, secrets, SBOM in containers, Kubernetes, code repositories, clouds and more</summary>
