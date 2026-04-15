@@ -9,28 +9,18 @@ on:
         default: ''
 
 permissions:
-  contents: write
-  pull-requests: write
-  packages: write
-  actions: read
-  deployments: read
-  id-token: write
-  issues: write
-  discussions: read
-  pages: read
-  repository-projects: read
-  security-events: read
-  attestations: read # Added this
-  checks: write # Added this
-  statuses: write # Added
+  contents: read
 
 jobs:
   # run the update script on ubuntu and push the changes to main branch
   update:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-2404-2core
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          token: ${{ secrets.TRIVY_CHOCOLATEY_DEPLOY_TOKEN }}
+          persist-credentials: true
 
       - name: Set up Git
         run: |
@@ -39,22 +29,26 @@ jobs:
 
       - name: Set Trivy version from input
         id: set_version
+        env:
+          INPUT_VERSION: ${{ github.event.inputs.version }}
         run: |
           # Remove "v" prefix if present
-          incoming_version="${{ github.event.inputs.version }}"
+          incoming_version="${INPUT_VERSION}"
           echo "version=${incoming_version#v}" >> $GITHUB_OUTPUT
 
       - name: Run update script
+        env:
+          TRIVY_VERSION: ${{ steps.set_version.outputs.version }}
         run: |
-          ./scripts/update.sh "${{ steps.set_version.outputs.version }}"
+          ./scripts/update.sh "$TRIVY_VERSION"
 
       - name: Commit and push changes
+        env:
+          GIT_REF_NAME: ${{ github.ref_name }}
         run: |
           git add trivy.nuspec tools/chocolateyinstall.ps1
           git commit -m "Update package to latest version" || echo "No changes to commit"
-          git push origin HEAD:${{ github.ref_name }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          git push origin "HEAD:${GIT_REF_NAME}"
 
     # on windows latest, build and push the package to chocolatey.org and myget.org
   build-and-push:
@@ -62,9 +56,10 @@ jobs:
     needs: update
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          ref: main   
+          ref: main
+          persist-credentials: false
 
       - name: pack the project
         run: |
@@ -73,4 +68,3 @@ jobs:
           choco push -s https://push.chocolatey.org/
         env:
           CHOCO_API_KEY: ${{ secrets.CHOCO_API_KEY }}
-
