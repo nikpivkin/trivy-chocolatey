@@ -13,7 +13,7 @@ permissions: {}
 jobs:
   # run the update script on ubuntu and push the changes to main branch
   update:
-    runs-on: ubuntu-2404-2core
+    runs-on: ubuntu-24.04
     permissions: {}
     steps:
       # Use a GitHub App token because GITHUB_TOKEN cannot bypass repository rules on push
