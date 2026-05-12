@@ -8,24 +8,34 @@ on:
         required: false
         default: ''
 
-permissions:
-  contents: read
+permissions: {}
 
 jobs:
   # run the update script on ubuntu and push the changes to main branch
   update:
     runs-on: ubuntu-2404-2core
+    permissions: {}
     steps:
+      # Use a GitHub App token because GITHUB_TOKEN cannot bypass repository rules on push
+      - name: Generate token
+        id: app-token
+        uses: actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3 # v3.1.1
+        with:
+          client-id: ${{ secrets.REPO_TRIVY_TELEMETRY_WRITE_GH_APP_CLIENT_ID }}
+          private-key: ${{ secrets.REPO_TRIVY_TELEMETRY_WRITE_GH_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          token: ${{ secrets.TRIVY_CHOCOLATEY_DEPLOY_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
           persist-credentials: true
 
       - name: Set up Git
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "GitHub Actions"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Set Trivy version from input
         id: set_version
@@ -53,6 +63,8 @@ jobs:
     # on windows latest, build and push the package to chocolatey.org and myget.org
   build-and-push:
     runs-on: windows-latest
+    permissions:
+      contents: read # Required for actions/checkout
     needs: update
     steps:
       - name: Checkout repository
